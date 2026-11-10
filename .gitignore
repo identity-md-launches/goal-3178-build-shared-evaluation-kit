@@ -1,0 +1,7 @@
+# Credit: Taylor (gtmcknight), solved-policy research,
+# github.com/gtmcknight/amm-sim @ 4812a6382311624e1506aca131ca35c378f930d9 (research/solved).
+# Runtime state (venv, interpreter, engine checkout, caches, logs) lives under scratch/ and is never committed.
+scratch/
+__pycache__/
+*.py[cod]
+.pytest_cache/

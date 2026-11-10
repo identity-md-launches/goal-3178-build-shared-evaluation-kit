@@ -1,0 +1,334 @@
+{
+  "_credit": "Taylor (gtmcknight), solved-policy research, amm-sim@4812a6382311624e1506aca131ca35c378f930d9. Upstream bytes preserved unchanged.",
+  "format": 1,
+  "taylor_commit": "4812a6382311624e1506aca131ca35c378f930d9",
+  "starter_commit": "4eb3e985fd31e3cd17832501b95b6d2491aca73d",
+  "numba_decoded_json_sha256": "a5d32e4c06dc93881821d568d8d89ca50adfdba56d5dccd92afef6c6c2157952",
+  "licenses": {
+    "notice": "LICENSES.md",
+    "taylor": "No LICENSE/COPYING file in the pinned recursive repository tree; no license grant inferred.",
+    "starter": "No LICENSE/COPYING file in the pinned recursive repository tree. qt1/Strategy.sol declares SPDX-License-Identifier: MIT.",
+    "numba": "Artifact supplies attribution but no explicit license or separate license file."
+  },
+  "files": [
+    {
+      "path": "combo/README.md",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/combo/README.md",
+      "sha256": "cfed4506552df43d2c57a9285f05296ebb7e664f2194a1eb5e369f5436102eb7",
+      "size": 4807,
+      "envelope": "envelopes/combo__README.md.json",
+      "envelope_sha256": "6210e9a9ed94c4b7e12a2fb0f240b61a74f0f570d696f42abb70115b75390010",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "combo/combo.py",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/combo/combo.py",
+      "sha256": "c5b711a0b4fb4783e8879a484bf87a427171f4a11aa5eb5ec3513c24ead1a796",
+      "size": 5929,
+      "envelope": "envelopes/combo__combo.py.json",
+      "envelope_sha256": "7590e4eaf3da63cd7b1bd8ccaa5758b9d36017a24f307adbab4bb80fa571dacc",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "combo/combo_fees.py",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/combo/combo_fees.py",
+      "sha256": "588860199d751b3af5c93f61bc21f0111495468c0216b0fa23911a78c0b32de9",
+      "size": 3794,
+      "envelope": "envelopes/combo__combo_fees.py.json",
+      "envelope_sha256": "e443e4ebcac67ccb0564c5afd292eb28ca43cb94afb452b74199cb088a96787e",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "combo/twocomp.py",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/combo/twocomp.py",
+      "sha256": "9d3c1833321493fb51bbde4e1b4dabc2f8978bd6d774ee2af8dc8aed13f0f0af",
+      "size": 11202,
+      "envelope": "envelopes/combo__twocomp.py.json",
+      "envelope_sha256": "9d4074ca8653dbe57fa5c22cb866cc2386d40a411d5dbcadc3486af6ddf713ac",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "numba/driver.py",
+      "url": "https://api.imd.fun/artifacts/b9c917ebb99152aafd12993b327f0a82529efe414a4a8fea8f4a0e3493cc1f8f",
+      "member": "driver.py",
+      "sha256": "8ae4aa097e03794872bbda37b8c024365b33bab45131e14e3a9f0c05c1bd4913",
+      "size": 7895,
+      "envelope": "envelopes/numba__driver.py.json",
+      "envelope_sha256": "ec1a6a23996dcaa9d1f87855c932deea8d75fab0459e692c8aaa7ec72f4d743d",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "numba/extract_refs.py",
+      "url": "https://api.imd.fun/artifacts/b9c917ebb99152aafd12993b327f0a82529efe414a4a8fea8f4a0e3493cc1f8f",
+      "member": "extract_refs.py",
+      "sha256": "7881369f1ba32c0140112564cb9833c1afbc79fddb3ff6a02d33c88228d92dc4",
+      "size": 1533,
+      "envelope": "envelopes/numba__extract_refs.py.json",
+      "envelope_sha256": "248c90e1bc16e77b0211b0f7150de4fa0d0115d3f5dd22e86e5920c3ada5bb3e",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "numba/fastsim.py",
+      "url": "https://api.imd.fun/artifacts/b9c917ebb99152aafd12993b327f0a82529efe414a4a8fea8f4a0e3493cc1f8f",
+      "member": "fastsim.py",
+      "sha256": "4d3d2187b5dcbcd979a0775e431d30421b0e376d3c582afc60fbb4d6a052596b",
+      "size": 25450,
+      "envelope": "envelopes/numba__fastsim.py.json",
+      "envelope_sha256": "355105f14d012389dd750af045e29b284b53a790a677fd4bf0be3033350ecae1",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "numba/source_bundle.json",
+      "url": "https://api.imd.fun/artifacts/b9c917ebb99152aafd12993b327f0a82529efe414a4a8fea8f4a0e3493cc1f8f",
+      "member": "source_bundle.json",
+      "sha256": "a5d32e4c06dc93881821d568d8d89ca50adfdba56d5dccd92afef6c6c2157952",
+      "size": 35790,
+      "envelope": "envelopes/numba__source_bundle.json.json",
+      "envelope_sha256": "5f889e33de4e6993f35f9120111e3d91839c038aef59f0ed2899a2973d411dab",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "qt1/REPORT.md",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/qt1/REPORT.md",
+      "sha256": "8a6e303b662e1a5ea9bb47f31acedd3988ef65b3ddb66d074517aa59ad41ca40",
+      "size": 62223,
+      "envelope": "envelopes/qt1__REPORT.md.json",
+      "envelope_sha256": "6a212d8903413277f00c46abc6d9e0812bc16e94d30e21567f44a83c3e4eab39",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "qt1/Strategy.sol",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/qt1/Strategy.sol",
+      "sha256": "c68887cff61180e12ba2b1ceb333edf76a830f91f63b5d775a8806fb9ec08aca",
+      "size": 42990,
+      "envelope": "envelopes/qt1__Strategy.sol.json",
+      "envelope_sha256": "f98174e2d72428a4ced591bc8de315f7cd4d62dabb531d96330768e4520cc4ed",
+      "license": "MIT SPDX identifier in original"
+    },
+    {
+      "path": "qt1/blob.b64",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/qt1/blob.b64",
+      "sha256": "83a699922626c8f9f5e0444c5028464b42beef528b59d7d0324dea2206fdd376",
+      "size": 13692,
+      "envelope": "envelopes/qt1__blob.b64.json",
+      "envelope_sha256": "5a88f84da3be397d021f549fd8daa716b0c50f7ff1beac02ae3d1c2b873362ac",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "qt1/blob.bin",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/qt1/blob.bin",
+      "sha256": "3ac7cb8811ecfb6a17f499aa4e9b70dd55f7fb6432b3aec3b904e11a3dece38e",
+      "size": 10167,
+      "envelope": "envelopes/qt1__blob.bin.json",
+      "envelope_sha256": "8adfc0cbebbde0e6b4ea8d50c643fe5388fbcf0d464ed63bf33c8414b3e42bba",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "qt1/qmref.py",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/qt1/qmref.py",
+      "sha256": "1dfc9b7a3c2237ff7a93dd9f0af54b9bdab16f2ce0a7eb00784cb4432598db92",
+      "size": 7739,
+      "envelope": "envelopes/qt1__qmref.py.json",
+      "envelope_sha256": "97663b2ca2e14631e141d0d489ed7731bdd41f341e515760a2d2afdccce7296f",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/README.md",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/README.md",
+      "sha256": "02d2b51f17adbb5411a2a67f7a37255143ba381a73ff10abba557d7d23c0cef2",
+      "size": 10483,
+      "envelope": "envelopes/taylor__README.md.json",
+      "envelope_sha256": "d7d9e54c4cb0710b1bb64ef05acc042b59cc9726fc2efa48aa818f2c128e7d01",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/calib_out_2048.json",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/calib_out_2048.json",
+      "sha256": "fdf24c7aa2b604d770336a5783276da8ed4d50bca9dbcc02e98b4da58f608d26",
+      "size": 2948144,
+      "envelope": "envelopes/taylor__calib_out_2048.json.json",
+      "envelope_sha256": "d23d08ac440e7f9f046f9b118ba30c496bf389c2ef64285e0e3cb8b7684c7934",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/clsdata.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/clsdata.py",
+      "sha256": "41a72a924638e34d4ef56ba922f162e7fe60ac6c915f08d950c648151dc7b227",
+      "size": 3628,
+      "envelope": "envelopes/taylor__clsdata.py.json",
+      "envelope_sha256": "a2a151440ddca6192d6f757d2d9f246dd258465187aa7883fb2a49e3a5621bfc",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/dp.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/dp.py",
+      "sha256": "ca4e7c378d23c46c7def4716611135c471a831d15234b984fe30d58d9eec5734",
+      "size": 15595,
+      "envelope": "envelopes/taylor__dp.py.json",
+      "envelope_sha256": "e470ccd49180f56191dc9a1e1a4c6b7dcbcea28dfc4a752e1edb381d99320966",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/evalpol.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/evalpol.py",
+      "sha256": "6e67667bfed7798bdd3384652a6efc6ba0b1fce653740d0f9af2bcbcb8e6a27c",
+      "size": 4610,
+      "envelope": "envelopes/taylor__evalpol.py.json",
+      "envelope_sha256": "52c97d93e029cac1ae28bb24347f067faca0646b30f69da0fc34d92fb13591a7",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/fillstat.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/fillstat.py",
+      "sha256": "a02f85e20e80f0593b9986e96cfa78f4e5f63947bd8f228a31c60af3f2503ec5",
+      "size": 2188,
+      "envelope": "envelopes/taylor__fillstat.py.json",
+      "envelope_sha256": "87e7409b469329a4e84f6de5435760ce4639d4604bf1ac43284d276b42e48557",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/fixedcheck2.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/fixedcheck2.py",
+      "sha256": "de6991683b4a5f2b05b4b0d0a09e963ebc7ca1c4d7b6a4cc7602882999b08c8d",
+      "size": 1038,
+      "envelope": "envelopes/taylor__fixedcheck2.py.json",
+      "envelope_sha256": "9124ff4eaaf260edcdd33fd2039f6eda1d0557d4114658cf979c0cdf49487951",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/gates.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/gates.py",
+      "sha256": "603280c1f595ca163ffaf2ba1ebdc7945fdb08dabae67fc53c922d39e1cce604",
+      "size": 792,
+      "envelope": "envelopes/taylor__gates.py.json",
+      "envelope_sha256": "1eb7400800bb9760486477af0a17cd7bbe8e0b9c8f9d8026f1521a48bcc12c53",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/latt.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/latt.py",
+      "sha256": "925c0fe996b19fd51fb79a85d5e4dba4bc2f5453d0a156cc1e480f65a6a00cc8",
+      "size": 8893,
+      "envelope": "envelopes/taylor__latt.py.json",
+      "envelope_sha256": "398efe97bd102ccf25352ab88f0d517ee898f9df94f0b035caee8f101e4c7bbe",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/pol_mid.json",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/pol_mid.json",
+      "sha256": "efbb5ee102db4d312f64565d9bf7232b6becbe02b624164f744a402bbbf2983b",
+      "size": 780061,
+      "envelope": "envelopes/taylor__pol_mid.json.json",
+      "envelope_sha256": "cf60be0f63733890a242ba3877473a125e4935f1deedd2540364517892c91266",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/qm_k1e-5.json",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/qm_k1e-5.json",
+      "sha256": "5ff53e42ca87390e5f65d1caa3f7a480e67a8212fb0670274dfd562b05ba1afd",
+      "size": 7892018,
+      "envelope": "envelopes/taylor__qm_k1e-5.json.json",
+      "envelope_sha256": "2262184903dd1c8c0e4368f1190e7a312e079b2ca13188073b8718588bee8aef",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/qmdp.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/qmdp.py",
+      "sha256": "63b8c35048718c37eb0a5dae9e70849fa3af257c335e4a2e3a625c833f1dc1eb",
+      "size": 8609,
+      "envelope": "envelopes/taylor__qmdp.py.json",
+      "envelope_sha256": "4eecd56a84d1de9175c3a179939525658162ba0011079090ae9194069d930f89",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/real.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/real.py",
+      "sha256": "1305b5333731c046c3e6736cc2578eff4635c88132a39c22f5780d78aef2c81e",
+      "size": 9586,
+      "envelope": "envelopes/taylor__real.py.json",
+      "envelope_sha256": "b1b9f5d2d7c4f566fad66f0c7ba3903e6833d464e8af2020653a6bd4eb895abc",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/replica2.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/replica2.py",
+      "sha256": "6e37b4e61e1ffa5ffb1e43912ddb8659105989aa986eb48fcd1d7608f8dca685",
+      "size": 7503,
+      "envelope": "envelopes/taylor__replica2.py.json",
+      "envelope_sha256": "3df9a33a3904b72f7b4241ad74064feb3c2bd9c80904822c8cf70ec7460c8d5f",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/stale.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/stale.py",
+      "sha256": "b79b7356f7c46738ca0c5f4718ae397b67e222d8bc57cbc088896270800d5462",
+      "size": 2218,
+      "envelope": "envelopes/taylor__stale.py.json",
+      "envelope_sha256": "10d95c21496465607865335181bb17c6a160b3808361bf53bc554d114d454a26",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/trace.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/trace.py",
+      "sha256": "6300a33eddc091d9cb3bec5b36e23f32a541a8a2499085b9cc05d08e96b6f692",
+      "size": 1759,
+      "envelope": "envelopes/taylor__trace.py.json",
+      "envelope_sha256": "75bcc5a0584df3261fe137163271fd3e5a2c20a24d92a7b95a18e61b0136ad8a",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "taylor/track.py",
+      "url": "https://raw.githubusercontent.com/gtmcknight/amm-sim/4812a6382311624e1506aca131ca35c378f930d9/research/solved/track.py",
+      "sha256": "69f49abd59e6bd62f457184cbf6ca7ea16d42bb3ef90d71c0802468ded0ba486",
+      "size": 3890,
+      "envelope": "envelopes/taylor__track.py.json",
+      "envelope_sha256": "0f99f759cab31b90acdeaf1078d1bf4078cdd509c12175e67dbf9cdb799f52d1",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "tools/README.md",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/tools/README.md",
+      "sha256": "4e75965d6ec00e9e9e3887b83688bb3f9ea8fc438f4d3336ef104bae8a234c6f",
+      "size": 4474,
+      "envelope": "envelopes/tools__README.md.json",
+      "envelope_sha256": "6676a88bde27aac8bc1a2d0afa72f8e6c4b694e0af64a3067a9cca80c053549e",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "tools/check.py",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/tools/check.py",
+      "sha256": "cbcfea4c793ac7b78e0ee27dd723c9e6af4d9d704a70a8038c985acffffcfed1",
+      "size": 4755,
+      "envelope": "envelopes/tools__check.py.json",
+      "envelope_sha256": "c2abb1053c780b0277c6d3e13a2fc765f06ad0c67d8609d77bdc922123bae065",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "tools/engine.py",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/tools/engine.py",
+      "sha256": "306c529d0c84c88610c1e8a9a6aa34634534b73ab83312e9155ef14476e46300",
+      "size": 4430,
+      "envelope": "envelopes/tools__engine.py.json",
+      "envelope_sha256": "93daeec326a23bd7e80728b2d1c888a81db04d949a708433eea3bf2d2cb6e922",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "tools/setup.sh",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/tools/setup.sh",
+      "sha256": "2bac901bd8986b09f10fe00b649dab35f335267ef12c5e4e527ede6b14c5a4b1",
+      "size": 2045,
+      "envelope": "envelopes/tools__setup.sh.json",
+      "envelope_sha256": "e9b0ea29a47ad1ae7131d20791a46bda67cb8bddfa5a421dad805ca51054802a",
+      "license": "No explicit license supplied in pinned source"
+    },
+    {
+      "path": "twocomp/twocomp.py",
+      "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/twocomp/twocomp.py",
+      "sha256": "9d3c1833321493fb51bbde4e1b4dabc2f8978bd6d774ee2af8dc8aed13f0f0af",
+      "size": 11202,
+      "envelope": "envelopes/twocomp__twocomp.py.json",
+      "envelope_sha256": "318fc91e2f8903dabab49023c139c0c49945ff9a7c9ab844ceb23b3e4089d053",
+      "license": "No explicit license supplied in pinned source"
+    }
+  ]
+}
