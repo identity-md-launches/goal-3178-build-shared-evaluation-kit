@@ -1,0 +1,180 @@
+{
+  "_credit": "Taylor (gtmcknight), amm-sim@4812a6382311624e1506aca131ca35c378f930d9 research/solved, solved-policy research",
+  "benchmark": {
+    "compile_seconds": 13.902336570899934,
+    "run_seconds": 6.399619397241622,
+    "fields_checked": 48,
+    "rows": [
+      {
+        "seed": 9700000,
+        "edge": 505.9568443502717
+      }
+    ],
+    "stats": [
+      {
+        "role": "Baseline",
+        "callback": "afterInitialize",
+        "calls": 1,
+        "ok": 1,
+        "max_ok_gas": 21796,
+        "sum_ok_gas": 21796,
+        "oog": 0,
+        "revert": 0,
+        "other_halt": 0,
+        "tx_error": 0,
+        "bad_return": 0
+      },
+      {
+        "role": "Baseline",
+        "callback": "afterSwap",
+        "calls": 11199,
+        "ok": 11199,
+        "max_ok_gas": 22592,
+        "sum_ok_gas": 252680400,
+        "oog": 0,
+        "revert": 0,
+        "other_halt": 0,
+        "tx_error": 0,
+        "bad_return": 0
+      },
+      {
+        "role": "Baseline",
+        "callback": "getName",
+        "calls": 1,
+        "ok": 1,
+        "max_ok_gas": 21526,
+        "sum_ok_gas": 21526,
+        "oog": 0,
+        "revert": 0,
+        "other_halt": 0,
+        "tx_error": 0,
+        "bad_return": 0
+      },
+      {
+        "role": "Submission",
+        "callback": "afterInitialize",
+        "calls": 1,
+        "ok": 1,
+        "max_ok_gas": 90858,
+        "sum_ok_gas": 90858,
+        "oog": 0,
+        "revert": 0,
+        "other_halt": 0,
+        "tx_error": 0,
+        "bad_return": 0
+      },
+      {
+        "role": "Submission",
+        "callback": "afterSwap",
+        "calls": 11322,
+        "ok": 11322,
+        "max_ok_gas": 206569,
+        "sum_ok_gas": 1557562045,
+        "oog": 0,
+        "revert": 0,
+        "other_halt": 0,
+        "tx_error": 0,
+        "bad_return": 0
+      },
+      {
+        "role": "Submission",
+        "callback": "getName",
+        "calls": 1,
+        "ok": 1,
+        "max_ok_gas": 21579,
+        "sum_ok_gas": 21579,
+        "oog": 0,
+        "revert": 0,
+        "other_halt": 0,
+        "tx_error": 0,
+        "bad_return": 0
+      }
+    ]
+  },
+  "benchmark_command": ". scratch/env.sh; timeout 470 python -B scratch/benchmark.py > scratch/benchmark.log 2>&1",
+  "benchmark_script": "# Credit: Taylor (gtmcknight), amm-sim@4812a6382311624e1506aca131ca35c378f930d9 research/solved.\nimport sys, time, hashlib, json\nfrom pathlib import Path\nsys.path.insert(0, str(Path('bootstrap').resolve()))\nfrom smoke_engine import config_for, check_transcription\nimport amm_sim_rs\nfrom amm_competition.evm.compiler import SolidityCompiler\nfrom amm_competition.evm.baseline import get_vanilla_bytecode_and_abi\np=Path('scratch/reference/qt1/Strategy.sol'); raw=p.read_bytes()\nassert hashlib.sha256(raw).hexdigest()=='c68887cff61180e12ba2b1ceb333edf76a830f91f63b5d775a8806fb9ec08aca'\nt=time.perf_counter(); r=SolidityCompiler().compile(raw.decode()); assert r.success,r.errors\nv=get_vanilla_bytecode_and_abi()[0]; compile_s=time.perf_counter()-t\nchecked=check_transcription(); amm_sim_rs.gas_stats_reset(); t=time.perf_counter()\nb=amm_sim_rs.run_batch(list(r.bytecode),list(v),[config_for(9700000)],8)\nd={'compile_seconds':compile_s,'run_seconds':time.perf_counter()-t,'fields_checked':checked,'rows':[{'seed':x.seed,'edge':x.edges['submission']} for x in b.results],'stats':amm_sim_rs.gas_stats()}\nPath('scratch/benchmark.json').write_text(json.dumps(d,indent=2)); print(json.dumps(d))\n",
+  "setup_command": "timeout 470 bash setup_fast.sh --platform linux-x86_64 --cache scratch/cache --deadline 420",
+  "setup_seconds": 15.398,
+  "setup_downloads": 16,
+  "materialize_command": "timeout 30 python3 -B reference/materialize.py --out scratch/reference",
+  "initial_sequential_projection_seconds": 3276.6051313877106,
+  "initial_chunk_count": 48,
+  "initial_chunk_simulation_seconds": 297.59204387431964,
+  "candidate_integration": {
+    "_credit": "Taylor (gtmcknight), amm-sim@4812a6382311624e1506aca131ca35c378f930d9 research/solved, solved-policy research",
+    "candidate_source_sha256": "64b62042f06d3b48d61c1387c0b6f08b0c291c9d2419a0ca65a5fc1d1cc19f96",
+    "rows": [
+      {
+        "seed": 9700511,
+        "edge": 365.1147164280063,
+        "after_swap_peak_gas": 22592
+      }
+    ],
+    "seconds": 1.3540402296930552,
+    "config_fields_compared": 48
+  },
+  "candidate_command": ". scratch/env.sh; timeout 470 python -B scratch/integration.py > scratch/integration.log 2>&1",
+  "candidate_script": "# Credit: Taylor (gtmcknight), amm-sim@4812a6382311624e1506aca131ca35c378f930d9 research/solved.\nimport sys, json, time\nfrom pathlib import Path\nsys.path.insert(0,str(Path('.').resolve()))\nimport engine_eval as e\nsource=Path('scratch/engine/amm-challenge/contracts/src/VanillaStrategy.sol').read_text().replace('contract VanillaStrategy','contract Strategy')\np=Path('scratch/candidate.sol'); p.write_text(source)\nt=time.perf_counter(); rows=e.run_batch([9700511],p)\nassert len(rows)==1 and rows[0]['seed']==9700511\nresult=dict(_credit=e.CREDIT, candidate_source_sha256=e.digest(p), rows=rows, seconds=time.perf_counter()-t, config_fields_compared=e.config_equivalence())\ne.atomic_json('scratch/integration.json',result)\nprint(json.dumps(result))\n",
+  "unit_test_command": "timeout 60 python3 -B -m unittest discover -s tests -p test_engine_eval.py",
+  "unit_test_count": 16,
+  "unit_test_seconds": 0.098,
+  "unit_test_failures": 0,
+  "unit_test_source_sha256": "51c4ef53fe2cac78b776ae5c0a1adaca6b3a15cc8ddacf707bd8d112adc6653a",
+  "notes": [
+    "Benchmark preceded bank chunk selection.",
+    "Raw benchmark edge matches bank seed 9700000 exactly.",
+    "Initial 26-test run redundantly inherited 10 tests; suite was corrected to 16 distinct tests.",
+    "Linux x86_64 only; macOS arm64 engine unsupported; other platforms untested."
+  ],
+  "generation_chunks": [
+    {
+      "chunk": 1,
+      "seeds": 48,
+      "first": 9700000,
+      "last": 9700047,
+      "command_seconds": null,
+      "summed_singleton_seconds": 297.59204387431964
+    },
+    {
+      "chunk": 2,
+      "seeds": 48,
+      "first": 9700048,
+      "last": 9700095,
+      "command_seconds": 172.9210888594389,
+      "summed_singleton_seconds": 293.8961971513927
+    },
+    {
+      "chunk": 3,
+      "seeds": 96,
+      "first": 9700096,
+      "last": 9700191,
+      "command_seconds": 184.8638134249486,
+      "summed_singleton_seconds": 602.1934109767899
+    },
+    {
+      "chunk": 4,
+      "seeds": 200,
+      "first": 9700192,
+      "last": 9700391,
+      "command_seconds": 358.65672316309065,
+      "summed_singleton_seconds": 2443.6591612189077
+    },
+    {
+      "chunk": 5,
+      "seeds": 120,
+      "first": 9700392,
+      "last": 9700511,
+      "command_seconds": 228.41104416176677,
+      "summed_singleton_seconds": 735.9760342594236
+    }
+  ],
+  "timing_note": "First generator did not emit command wall time; its summed singleton duration is recorded. Parallel singleton durations overlap and must not be interpreted as CPU time or total wall time.",
+  "complete_bank_count": 512,
+  "actual_engine_invocations": {
+    "qt1_bank": 512,
+    "qt1_initial_benchmark": 1,
+    "candidate_vanilla_integration": 1,
+    "qt1_final_validation": 5
+  },
+  "validation_command": ". scratch/env.sh; timeout 470 python -B baselines/engine/validate.py > scratch/validation.log 2>&1"
+}

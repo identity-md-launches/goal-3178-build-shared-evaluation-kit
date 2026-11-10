@@ -1,0 +1,75 @@
+{
+  "_credit": "Taylor (gtmcknight), amm-sim@4812a6382311624e1506aca131ca35c378f930d9 research/solved, solved-policy research",
+  "status": "complete",
+  "screening_only": true,
+  "count": 512,
+  "remaining_seeds": [],
+  "bank_sha256": "f1031aae649d2ad8e871ee1cc055770a4c6b329ff3e71afb4500fca3c8621f90",
+  "audit_sha256": "5256d2bd776a44f34780e47551c2d7d02f9a2e9fc8b8392fc6b46a92593d2ade",
+  "validator_sha256": "0ced42c7885beea82f96fac625c778e16c3f27823071bf3c22a1b8ec9cf863db",
+  "argv": [
+    "baselines/engine/validate.py"
+  ],
+  "reference_origin": {
+    "path": "qt1/Strategy.sol",
+    "url": "https://raw.githubusercontent.com/identity-md-launches/goal-3170-beat-network-s-amm-entry/4eb3e985fd31e3cd17832501b95b6d2491aca73d/reference/qt1/Strategy.sol",
+    "sha256": "c68887cff61180e12ba2b1ceb333edf76a830f91f63b5d775a8806fb9ec08aca",
+    "size": 42990,
+    "envelope": "envelopes/qt1__Strategy.sol.json",
+    "envelope_sha256": "f98174e2d72428a4ced591bc8de315f7cd4d62dabb531d96330768e4520cc4ed",
+    "license": "MIT SPDX identifier in original"
+  },
+  "reference_goal_commit": "4eb3e985fd31e3cd17832501b95b6d2491aca73d",
+  "taylor_commit": "4812a6382311624e1506aca131ca35c378f930d9",
+  "reference_inventory_sha256": "62147ff112987f666e2c1ad5041012276a66033baec543c2b014f766cd8f01f5",
+  "upstream_source_files_checked": 25,
+  "config_fields_compared": 48,
+  "singleton_worker_argument": 8,
+  "all_gas_counters_valid": true,
+  "failed_seed_attempts": [],
+  "reruns": [
+    {
+      "seed": 9700000,
+      "exact_unrounded_edge_equal": true,
+      "exact_after_swap_peak_gas_equal": true,
+      "edge": 505.9568443502717,
+      "after_swap_peak_gas": 206569
+    },
+    {
+      "seed": 9700128,
+      "exact_unrounded_edge_equal": true,
+      "exact_after_swap_peak_gas_equal": true,
+      "edge": 397.236183211532,
+      "after_swap_peak_gas": 203559
+    },
+    {
+      "seed": 9700256,
+      "exact_unrounded_edge_equal": true,
+      "exact_after_swap_peak_gas_equal": true,
+      "edge": 792.4027185246596,
+      "after_swap_peak_gas": 191058
+    },
+    {
+      "seed": 9700383,
+      "exact_unrounded_edge_equal": true,
+      "exact_after_swap_peak_gas_equal": true,
+      "edge": 575.0798441908556,
+      "after_swap_peak_gas": 193332
+    },
+    {
+      "seed": 9700511,
+      "exact_unrounded_edge_equal": true,
+      "exact_after_swap_peak_gas_equal": true,
+      "edge": 517.437785286847,
+      "after_swap_peak_gas": 191550
+    }
+  ],
+  "rerun_seconds": 32.63050219928846,
+  "validation_seconds": 46.89377591200173,
+  "tested_platform": "linux-x86_64",
+  "untested_platforms": [
+    "macos-arm64 (engine unsupported)",
+    "Windows",
+    "other platforms"
+  ]
+}
