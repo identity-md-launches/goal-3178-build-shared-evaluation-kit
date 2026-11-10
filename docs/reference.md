@@ -1,4 +1,4 @@
-<!-- Credit: Taylor (gtmcknight), solved-policy research, amm-sim@4812a6382311624e1506aca131ca35c378f930d9. -->
+<!-- Credit: Taylor (gtmcknight), solved-policy research, amm-sim@4812a6382311624e1506aca131ca35c378f930d9, research/solved. -->
 # Offline reference and Gate P
 
 The foundation preserves Taylor's entire `research/solved` directory at
@@ -17,8 +17,8 @@ members (`fastsim.py`, `driver.py`, `extract_refs.py`). Artifact commands were
 not executed. The archived scripts are research inputs: in particular, the
 Numba driver expects additional HEAD8 files and a flattened reference directory.
 Extraction does not promise that driver is a standalone installed kit. The
-starter setup script can download or build dependencies; it is not the future
-pinned, no-Rust `setup_fast.sh`.
+starter setup script can download or build dependencies; the kit
+provides the pinned, no-Rust `setup_fast.sh` separately (see [setup.md](setup.md)).
 
 ## Offline extraction
 
@@ -108,7 +108,7 @@ policies, and does not certify the Numba or Solidity ports.
 
 ## Publication
 
-The authoritative inventory contains raw upstream URLs. The final goal commit is
-assigned after this wave merges, so final goal-repository raw URLs are pending.
-Do not substitute a worker checkout hash or guess the final commit. Once pinned,
-add actual raw URLs for this foundation and the remaining kit pieces to README.
+The authoritative inventory contains raw upstream URLs. [README.md](../README.md)
+is the publication entry point carrying the pinned URL table for the kit.
+Use that table for goal-repository raw URLs; this document does not assign a
+commit hash for this wave.

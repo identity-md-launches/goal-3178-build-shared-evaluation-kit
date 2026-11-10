@@ -20,14 +20,14 @@ certify code written at the same time as this tool.
 ```sh
 # Full kit (exit 0 only when every part passes):
 timeout 470 python3 -B validate_kit.py
-# Parts that exist on the wave-2 trunk:
+# Select individual parts:
 timeout 470 python3 -B validate_kit.py --parts reference,kit,engine,ha
 # Save a copy of the report, and print per-part seconds to stderr:
 timeout 470 python3 -B validate_kit.py --out scratch/kit-validator/report.json --timing
 # Another checkout:
 timeout 470 python3 -B validate_kit.py --root /path/to/checkout
 # Adversarial fixture tests (fixtures are written to scratch/kit-validator/fx-*):
-timeout 470 python3 -B -m unittest tests.test_validate_kit -v
+timeout 470 python3 -B -m unittest discover -s tests -p test_validate_kit.py -v
 ```
 
 Exit codes: `0` means every requested part passed. `1` means a requested part
@@ -78,8 +78,8 @@ each `edge` is a finite string matching `^-?[0-9]+\.[0-9]{6}$`.
 {"_credit": "...Taylor (gtmcknight)...4812a6382311624e1506aca131ca35c378f930d9...",
  "complete": true,
  "bindings": {"<repo-relative path>": "<sha256>", ...},
- "gates": [{"policy","seed","cpython_edge","ammfast_edge","abs_error"}, ...],   // 384
- "spots": [ same shape ],                                                        // 576
+ "gates384": [{"policy","seed","cpython_edge","ammfast_edge","abs_error"}, ...],   // 384
+ "spots576": [ same shape ],                                                        // 576
  "timings": {"runs_per_second_per_core": {"qt1-ref": n, "TwoComp": n, "COMBO": n},
              "cold_jit_seconds": n}}
 ```
@@ -91,8 +91,8 @@ each `edge` is a finite string matching `^-?[0-9]+\.[0-9]{6}$`.
   contains backslashes, is not normalized, goes through a symlink or resolves
   outside the tree. The file must not bind itself, because that would be a
   self-hash cycle.
-* `gates` must hold exactly the three policies × (10000..10063 + 64000..64063).
-  `spots` must hold exactly the three policies × the first 64 seeds of each
+* `gates384` must hold exactly the three policies × (10000..10063 + 64000..64063).
+  `spots576` must hold exactly the three policies × the first 64 seeds of each
   window (60000.., 64000.., 10000..). Every record has exactly those five keys
   and finite numeric edges. The tool recomputes `abs(cpython_edge -
   ammfast_edge)`, requires it to be `<= 1e-9`, and requires the reported
@@ -101,17 +101,19 @@ each `edge` is a finite string matching `^-?[0-9]+\.[0-9]{6}$`.
 * `timings` needs one finite, positive rate per policy and a finite,
   nonnegative cold-JIT time. There is **no speed threshold**.
 
-## Status on the wave-2 trunk (57ce0df)
+## Status on the repaired trunk (base 79f068cef81dadee171531f3381e207c193c959a)
 
-`reference`, `kit`, `engine` and `ha` pass, covering 2560 of 14848 rows. Both
-`ammfast` and `replica` are reported as `missing`: there is no `ammfast/`, none
-of the nine banks and no `baselines/replica/validation.json`. The full command
-therefore exits 1. A full PASS waits for the merged wave.
+With the evidence-key repair, the full validator exits **0**, status **PASS**,
+with no findings. All six parts (`reference`, `kit`, `ammfast`, `engine`, `ha`,
+`replica`) pass. Coverage is **14848/14848**: replica 12288, HA 2048 and engine
+512. The replica summary reports 384 gates and 576 spots; its output keys remain
+`gates` and `spots`. The worst gate and spot absolute errors are both
+**1.1937117960769683e-11**, below the unchanged 1e-9 bound.
 
-Benchmark (Python 3.12, this machine): parsing and hashing the committed engine
-bank, audit, validation, HA bank and inventory took 0.038 s in total, including
-decoding the 2.9 MB calib envelope. A full validator run took about 0.1 s.
-`reference` took 0.031 s, `engine` 0.014 s and `ha` 0.048 s.
+Benchmark: the initial failing full-tree check took 0.57 s wall time; the repaired
+check took 0.62 s. With `--timing`, part times were reference 0.1031 s, kit
+0.0072 s, ammfast 0.0335 s, engine 0.0579 s, HA 0.1899 s and replica 0.1067 s.
+These checks inspect committed evidence; no simulator was run.
 
 ## Future simulator integration (not run by this tool)
 
@@ -123,12 +125,16 @@ runtimes. The following commands come from the existing kit docs and run in
 bash setup_fast.sh --platform linux-x86_64 --cache scratch/cache        # pinned runtimes
 python3 -B reference/materialize.py --out scratch/reference
 python3 -B gatep.py --reference scratch/reference/taylor --cache scratch/cache/gatep
-. scratch/env.sh && timeout 470 python -B baselines/engine/validate.py  # engine reruns
+. scratch/env.sh && timeout 470 python -B baselines/engine/validate.py --output scratch/engine-validation.json
 ```
+
+The explicit engine `--output` keeps rerun results under `scratch/`: the default
+`--output` rewrites the timing fields of the committed
+`baselines/engine/validation.json`.
 
 For the replica, rerun CPython replica2 (`scratch/reference/taylor/replica2.py`)
 and `ammfast.run` on a fresh sample of seeds, chosen independently of the
-committed `gates` and `spots`. Compare the per-seed edges within 1e-9 and
+committed `gates384` and `spots576`. Compare the per-seed edges within 1e-9 and
 compare their `.6f` strings with the banks. Use the generation command recorded
 in each replica bank's `provenance`. This tool does not supply or vouch for that
 command. Then rerun `validate_kit.py` and refresh the bindings. Engine seeds stay

@@ -105,7 +105,7 @@ For live use, the shared pinned runtime is normally prepared with
 `timeout 470s bash setup_fast.sh --platform linux-x86_64 --cache scratch/cache --deadline 420`
 and references with
 `timeout 60s python3 -B reference/materialize.py --out scratch/reference`.
-Only run setup in an environment whose operator permits its platform checks.
+The platform argument selects pinned artifacts without a host probe.
 Neither command is needed for offline scoring.
 
 Offline row comparison (ordinary Python, no NumPy/Numba/engine dependency):
@@ -190,26 +190,13 @@ tests and skips them unless explicitly enabled.
 
 ## Optional real engine integration
 
-Run from the checkout on the pinned Linux x86_64 runtime. For this task's
-explicit-platform setup, make a temporary copy and replace only its host probe;
-all download SHA checks remain active. Do not run the original host probe.
+Run from the checkout on the pinned Linux x86_64 runtime. The installer takes
+an explicit platform and needs no copied script or host-probe patch.
 
 ```sh
-mkdir -p scratch/bootstrap-copy
-cp setup_fast.sh scratch/bootstrap-copy/
-cp -r bootstrap scratch/bootstrap-copy/
-python3 -B - <<'COPY'
-from pathlib import Path
-p = Path('scratch/bootstrap-copy/setup_fast.sh')
-s = p.read_text()
-assert s.count('HOST_HAVE=$(uname -sm)') == 1
-p.write_text(s.replace('HOST_HAVE=$(uname -sm)', 'HOST_HAVE=$HOST_WANT'))
-Path('scratch/bootstrap-copy/delta.txt').write_text(
-    'COPY ONLY: HOST_HAVE=$(uname -sm) -> HOST_HAVE=$HOST_WANT; SHA checks unchanged.\n')
-COPY
-timeout 470 bash scratch/bootstrap-copy/setup_fast.sh --platform linux-x86_64 --cache "$PWD/scratch/cache" --scratch "$PWD/scratch"
+bash setup_fast.sh --platform linux-x86_64 --cache "$PWD/scratch/cache" --scratch "$PWD/scratch"
 . scratch/env.sh
-timeout 60 python3 -B reference/materialize.py --out scratch/reference
+python3 -B reference/materialize.py --out scratch/reference
 timeout 470 env IMD_SCORE_ENGINE=1 python -B -m unittest discover -s tests -p test_score_integration.py -v
 ```
 
@@ -249,15 +236,36 @@ rerun. Per-seed progress can be used to recover computed rows for offline
 analysis, but is not automatically resumed as live CLI work. Only complete
 results with a successful test exit establish the stated integration.
 
-No `ammfast` exists in this item's starting trunk, so this check establishes
-no real replica integration or parity. Replica support remains the public
-`ammfast.run_batch(seeds, policy, head_params=None)` adapter contract, exercised
-only by the deterministic stubs here. Engine screening evidence does not imply
-replica, macOS, Windows, alternate wheel, or different market-config compatibility.
-The scorer deliberately adds no mandatory runtime fingerprint: callers must
-review source/runtime compatibility, and engine/HA banks remain unchanged.
+The merged tree implements the real replica backend in `ammfast/`; the scorer's
+default `ammfast.run_batch(seeds, policy, head_params=None)` adapter calls it
+directly. Committed replica parity and bank spot-check evidence is described in
+[ammfast.md](ammfast.md) and [replica-banks.md](replica-banks.md). The engine tests
+above and deterministic scorer stubs do not themselves establish replica parity.
+Engine screening evidence does not imply replica, macOS, Windows, alternate
+wheel, or different market-config compatibility. The scorer deliberately adds
+no mandatory runtime fingerprint: callers must review source/runtime compatibility.
 
-### Recorded integration (this item)
+### Real replica commands
+
+Prepare the replica-only runtime directly:
+
+```sh
+bash setup_fast.sh --platform linux-x86_64 --cache "$PWD/scratch/cache" --scratch "$PWD/scratch" --replica-only
+. scratch/env.sh
+python3 -B reference/materialize.py --out scratch/reference
+python -B score.py --baseline baselines/replica/qt1-ref-64000-65023.json --replica --policy COMBO --bar 0.1
+python -B score.py --baseline baselines/replica/TwoComp-64000-65023.json --replica --policy qt1-ref
+```
+
+Both examples select a 1024-seed bank (`64000..65023`). The scorer requests
+`64000..64127` first and only requests a subsequent round if no stop applies.
+During this documentation refresh, setup exited 3 because the pinned Linux
+interpreter could not execute (child exit 126 at `setup_fast.sh:280`). Neither
+scorer command ran: there are no measured round lines, stop reasons, requested
+seeds, or scorer seconds to quote from this attempt. These commands are runnable
+examples for the specified runtime, not recorded successful evaluations.
+
+### Previously recorded engine integration
 
 At starting trunk `57ce0df30e24784fb9d0537de55e5b7f8521ecd7`, the optional
 suite passed all three tests in 82.004 seconds. The initial one-seed benchmark

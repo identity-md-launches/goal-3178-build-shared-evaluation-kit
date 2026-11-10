@@ -88,8 +88,8 @@ class Fixture:
                     'abs_error': abs(c - a)}
         self.validation = {
             '_credit': CREDIT, 'complete': True, 'bindings': {},
-            'gates': [rec(p, s) for p in vk.POLICIES for s in vk.GATE_SEEDS],
-            'spots': [rec(p, s) for p in vk.POLICIES for a, _ in vk.WINDOWS for s in range(a, a + 64)],
+            'gates384': [rec(p, s) for p in vk.POLICIES for s in vk.GATE_SEEDS],
+            'spots576': [rec(p, s) for p in vk.POLICIES for a, _ in vk.WINDOWS for s in range(a, a + 64)],
             'timings': {'runs_per_second_per_core': {p: 10.0 for p in vk.POLICIES},
                         'cold_jit_seconds': 3.0}}
         self.rebind()
@@ -286,12 +286,26 @@ class ReplicaValidation(Base):
         self.fx.rebind()
         self.assertFails('replica', 'incomplete')
 
+    def test_old_evidence_names_fail(self):
+        for renamed in (('gates384',), ('spots576',), ('gates384', 'spots576')):
+            with self.subTest(renamed=renamed):
+                self.fx.build_replica()
+                for name in renamed:
+                    old_name = {'gates384': 'gates', 'spots576': 'spots'}[name]
+                    self.fx.validation[old_name] = self.fx.validation.pop(name)
+                self.fx.rebind()
+                r = self.assertFails('replica', 'bad-validation')
+                self.assertEqual(r['parts']['replica']['status'], 'fail')
+                self.assertEqual(r['coverage']['verified_rows'], 0)
+                self.assertIn(f'{renamed[0]} must be a list',
+                              [finding['detail'] for finding in r['findings']])
+
     def set_gate(self, index, **values):
-        self.fx.validation['gates'][index].update(values)
+        self.fx.validation['gates384'][index].update(values)
         self.fx.rebind()
 
     def test_error_boundary(self):
-        g = self.fx.validation['gates'][0]
+        g = self.fx.validation['gates384'][0]
         exact = 2.0 ** -30  # 9.31e-10: representable, just under 1e-9
         self.set_gate(0, cpython_edge=g['ammfast_edge'] + exact,
                       abs_error=abs(g['ammfast_edge'] + exact - g['ammfast_edge']))
@@ -305,7 +319,7 @@ class ReplicaValidation(Base):
         self.assertFails('replica', 'bad-validation')
 
     def test_gate_missing_extra_and_duplicate(self):
-        gates = self.fx.validation['gates']
+        gates = self.fx.validation['gates384']
         removed = gates.pop()
         self.fx.rebind()
         self.assertFails('replica', 'bad-validation')
@@ -325,19 +339,19 @@ class ReplicaValidation(Base):
                 self.set_gate(2, **{field: bad})
                 self.assertFails('replica', 'bad-validation')
         self.fx.build_replica()
-        self.fx.validation['spots'][0]['extra'] = 1
+        self.fx.validation['spots576'][0]['extra'] = 1
         self.fx.rebind()
         self.assertFails('replica', 'bad-validation')
 
     def test_spot_formatting_must_match_bank(self):
-        s = self.fx.validation['spots'][-1]
+        s = self.fx.validation['spots576'][-1]
         new = s['ammfast_edge'] + 0.01
         s.update(ammfast_edge=new, cpython_edge=new, abs_error=0.0)
         self.fx.rebind()
         self.assertFails('replica', 'spot-format')
 
     def test_spot_window_coverage(self):
-        spots = self.fx.validation['spots']
+        spots = self.fx.validation['spots576']
         idx = next(i for i, s in enumerate(spots) if s['seed'] == 60063 and s['policy'] == 'TwoComp')
         a = synthetic_edge('TwoComp', 60064)
         spots[idx] = {'policy': 'TwoComp', 'seed': 60064, 'cpython_edge': a, 'ammfast_edge': a,
@@ -490,12 +504,25 @@ class RealTrunkAndCli(unittest.TestCase):
     def test_real_trunk_reports_honestly(self):
         p = self.cli()
         report = json.loads(p.stdout)
-        missing = not (ROOT / 'ammfast').exists() or not (ROOT / vk.REPLICA_VALIDATION).exists()
-        if missing:
-            self.assertEqual(p.returncode, 1)
-            self.assertEqual(report['status'], 'FAIL')
-            self.assertNotEqual(report['parts']['replica']['status'], 'pass')
-        self.assertEqual(p.returncode, 0 if report['status'] == 'PASS' else 1)
+        self.assertEqual(p.returncode, 0, p.stdout)
+        self.assertEqual(report['status'], 'PASS')
+        self.assertEqual(report['findings'], [])
+        self.assertEqual({part: data['status'] for part, data in report['parts'].items()},
+                         {part: 'pass' for part in
+                          ('reference', 'kit', 'ammfast', 'engine', 'ha', 'replica')})
+        coverage = report['coverage']
+        self.assertEqual(coverage['expected_rows'], 14848)
+        self.assertEqual(coverage['verified_rows'], 14848)
+        for part, expected in (('replica', 12288), ('ha', 2048), ('engine', 512)):
+            with self.subTest(part=part):
+                banks = [bank for path, bank in coverage['banks'].items()
+                         if path.startswith(f'baselines/{part}/')]
+                self.assertTrue(banks)
+                self.assertTrue(all(bank['part_status'] == 'pass' for bank in banks))
+                self.assertEqual(sum(bank['expected'] for bank in banks), expected)
+                self.assertEqual(sum(bank['rows_well_formed'] for bank in banks), expected)
+        self.assertEqual(report['parts']['replica']['summary']['gates'], 384)
+        self.assertEqual(report['parts']['replica']['summary']['spots'], 576)
 
     def test_existing_parts_pass_on_real_trunk(self):
         p = self.cli('--parts', 'reference,kit,engine,ha')

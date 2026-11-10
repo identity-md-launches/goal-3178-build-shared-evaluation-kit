@@ -597,8 +597,8 @@ def part_replica(ctx):
             'bindings must include the ammfast implementation')
     gates = {(p, s) for p in POLICIES for s in GATE_SEEDS}
     spots = {(p, s) for p in POLICIES for a, _ in WINDOWS for s in range(a, a + 64)}
-    worst_gate = check_records(val.get('gates'), 'gates', gates, banks, REPLICA_VALIDATION)
-    worst_spot = check_records(val.get('spots'), 'spots', spots, banks, REPLICA_VALIDATION)
+    worst_gate = check_records(val.get('gates384'), 'gates384', gates, banks, REPLICA_VALIDATION)
+    worst_spot = check_records(val.get('spots576'), 'spots576', spots, banks, REPLICA_VALIDATION)
     timings = val.get('timings')
     require(isinstance(timings, dict), 'bad-timings', REPLICA_VALIDATION, 'timings must be an object')
     rates = timings.get('runs_per_second_per_core')
