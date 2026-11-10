@@ -182,7 +182,107 @@ Run the deterministic tests with:
 timeout 60s python3 -B -m unittest discover -s tests -p test_score.py -v
 ```
 
-Tests use contract-shaped fixtures and stubs, including call-count spies for both
-live backends. They do **not** establish real simulator integration, parity,
-engine gas measurement, or Linux/macOS runtime compatibility. Test temporary
-files stay under `scratch/score-tests`. No third-party test dependency is needed.
+These 35 deterministic tests use fixtures and stubs, including call-count spies
+for both backends. They do not establish simulator parity. Test temporary files
+stay under `scratch/score-tests`. No third-party test dependency is needed.
+Default discovery of `test_score*.py` also discovers three optional integration
+tests and skips them unless explicitly enabled.
+
+## Optional real engine integration
+
+Run from the checkout on the pinned Linux x86_64 runtime. For this task's
+explicit-platform setup, make a temporary copy and replace only its host probe;
+all download SHA checks remain active. Do not run the original host probe.
+
+```sh
+mkdir -p scratch/bootstrap-copy
+cp setup_fast.sh scratch/bootstrap-copy/
+cp -r bootstrap scratch/bootstrap-copy/
+python3 -B - <<'COPY'
+from pathlib import Path
+p = Path('scratch/bootstrap-copy/setup_fast.sh')
+s = p.read_text()
+assert s.count('HOST_HAVE=$(uname -sm)') == 1
+p.write_text(s.replace('HOST_HAVE=$(uname -sm)', 'HOST_HAVE=$HOST_WANT'))
+Path('scratch/bootstrap-copy/delta.txt').write_text(
+    'COPY ONLY: HOST_HAVE=$(uname -sm) -> HOST_HAVE=$HOST_WANT; SHA checks unchanged.\n')
+COPY
+timeout 470 bash scratch/bootstrap-copy/setup_fast.sh --platform linux-x86_64 --cache "$PWD/scratch/cache" --scratch "$PWD/scratch"
+. scratch/env.sh
+timeout 60 python3 -B reference/materialize.py --out scratch/reference
+timeout 470 env IMD_SCORE_ENGINE=1 python -B -m unittest discover -s tests -p test_score_integration.py -v
+```
+
+The test creates `scratch/score-integration/Strategy.sol` from the pinned
+`contracts/src/VanillaStrategy.sol`, changing only `contract VanillaStrategy`
+to `contract Strategy`. Hash assertions apply to this test candidate, not to
+arbitrary scorer candidates or existing bank provenance. It benchmarks seed
+9700000 first. If the conservative benchmark × 128 exceeds 400 seconds, the
+live128 test **skips**, which is missing live coverage, not a passing integration.
+On a slower runtime, collect bounded chunks with per-seed checkpoints and label
+subsequent scoring as offline replay; never call that a live128 round.
+
+The live test invokes the actual CLI entry point and default
+`engine_eval.run_batch` through `LiveCandidate`. Its baseline is the committed
+qt1 bank restricted to 9700001..9700511. It asserts one adapter request for
+9700001..9700128, exactly those 128 singleton evaluations, one stdout summary,
+sample SE independently computed with a two-pass formula, worst-five ordering,
+strict worse stopping, and no calls for 9700129..9700511. Wrappers forward real
+computed edges without replacement. A separate test reruns qt1 at only
+9700000, 9700128, 9700511 and requires exact unrounded edge/gas agreement with
+`baselines/engine/qt1-audit.json`, plus six-decimal agreement with
+`baselines/engine/qt1-9700000-9700511.json`.
+
+The third test is explicitly **offline replay**: committed qt1 audit rows
+9700000..9700127 against their rounded bank. It checks above-bar stopping just
+below the observed lower bound and no stop exactly at that bound. The existing
+stdlib fixtures cover exact worse-boundary equality, zero variance, n<2,
+invalid ordering/duplicates/missing/nonfinite rows, and requested-only calls.
+These fixture assertions are not additional live simulations.
+
+Evidence is written under `scratch/score-integration/`: source/runtime hashes
+in `runtime.json`, benchmark, `live-progress.json` after every seed,
+`live-result.json` only after successful live assertions, CLI stdout/stderr,
+`qt1-check.json`, and `replay-boundary.json`. Each run starts its live round
+afresh; a stale result file from an earlier run is not evidence for a failed
+rerun. Per-seed progress can be used to recover computed rows for offline
+analysis, but is not automatically resumed as live CLI work. Only complete
+results with a successful test exit establish the stated integration.
+
+No `ammfast` exists in this item's starting trunk, so this check establishes
+no real replica integration or parity. Replica support remains the public
+`ammfast.run_batch(seeds, policy, head_params=None)` adapter contract, exercised
+only by the deterministic stubs here. Engine screening evidence does not imply
+replica, macOS, Windows, alternate wheel, or different market-config compatibility.
+The scorer deliberately adds no mandatory runtime fingerprint: callers must
+review source/runtime compatibility, and engine/HA banks remain unchanged.
+
+### Recorded integration (this item)
+
+At starting trunk `57ce0df30e24784fb9d0537de55e5b7f8521ecd7`, the optional
+suite passed all three tests in 82.004 seconds. The initial one-seed benchmark
+took 1.172 seconds (150.019-second conservative projection); the suite repeated
+it in 1.208 seconds. The live128 scorer call took 47.945 seconds and emitted
+`n=128, mean_diff=-181.07580014978117, se=3.9162517263946226`, then stopped
+as `worse` with 511 seeds available. The qt1 three-seed check took 19.090 seconds.
+There were no test failures. These are this item's measurements, not claims
+about other workers' changes.
+
+| Actual input | SHA256 |
+| --- | --- |
+| Upstream VanillaStrategy.sol | `62d40ccef0de99a385e332a36ddf9cbd1da73eda06bd7954492a9880cb91a572` |
+| Contract-name-only candidate | `64b62042f06d3b48d61c1387c0b6f08b0c291c9d2419a0ca65a5fc1d1cc19f96` |
+| engine_eval.py adapter | `0a3ed61457cb66c85a292c82acbb9657b5e5544a98c7aa04c7a6a5dccdc1d3b2` |
+| qt1 source | `c68887cff61180e12ba2b1ceb333edf76a830f91f63b5d775a8806fb9ec08aca` |
+| Engine bank | `f1031aae649d2ad8e871ee1cc055770a4c6b329ff3e71afb4500fca3c8621f90` |
+| Unrounded audit | `5256d2bd776a44f34780e47551c2d7d02f9a2e9fc8b8392fc6b46a92593d2ade` |
+
+Runtime: pinned CPython 3.12.16, NumPy 2.5.4, release amm-sim-rs 0.1.0.post1,
+engine commit `6b6921f8d463314aa7c96234e1be25a25245f704`, solc 0.8.24
+(optimizer 200, viaIR, Paris), eight workers per singleton native call.
+The installed native library SHA256 was
+`ff88b6353c2aad7342f0a26194f7347e78b9c3b38d683a7449006d423978cd14`.
+Configuration equivalence checked all 12 fields at four indices (48 comparisons,
+no simulation at those indices); all 512 allowed configs hashed to
+`10c0fee88d6a982ae4aca9833d5ee228ffa75a2dfdcc732e6732b32541981afc`.
+The result artifact records full coverage, hashes, commands, and resume limits.

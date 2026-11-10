@@ -9,7 +9,8 @@ that idea and pins every downloaded byte.
 
 ## One command
 
-Run from the repository root. `--platform` is always explicit; it is never guessed.
+Run from the repository root. `--platform` is always explicit: it selects the artifacts and the
+machine is never inspected (no `uname`, no `platform` module, anywhere in the kit or its tests).
 
 ```sh
 # Linux x86_64: replica toolchain + engine (prebuilt wheel, harness, solc)
@@ -39,12 +40,14 @@ are never downloaded twice and a finished install is not redone.
 | `--fetch-only` | download and verify into the cache, install nothing; works on any host |
 | `--smoke` | run `bootstrap/smoke_replica.py`, and in engine mode `bootstrap/smoke_engine.py` |
 | `--force` | reinstall from the cache even if scratch already matches the pins |
-| `--deadline SEC` | stop cleanly with exit 75 before SEC seconds are used (default 420, max 470) |
+| `--deadline SEC` | total wall-clock budget; exit 75 once it is used (default 420, max 470), rerun to resume |
 | `--manifest FILE` | test hook; the only way `file://` URLs are accepted |
 
-Exit codes: 0 ok; 2 usage, or a refused platform or mode; 3 the host is not the requested
-platform; 4 sha256 or size mismatch; 5 offline cache miss; 6 download failed after 3 attempts;
-7 install or verification failed; 75 deadline reached, rerun to resume.
+Exit codes: 0 ok; 2 usage, or a refused platform or mode; 3 the interpreter selected by
+`--platform` does not run on this machine (wrong platform or too old a libc; nothing was
+installed); 4 sha256 or size mismatch; 5 offline cache miss; 6 download failed after 3 attempts;
+7 install or verification failed; 75 deadline reached, rerun the same command to resume;
+130 interrupted (Ctrl-C or SIGTERM), also resumable.
 
 The host needs `bash`, `tar`, `sha256sum` or `shasum`, and `curl` for online runs. Nothing
 else: no Rust, no compiler, no maturin, no uv, no package index. Linux needs glibc 2.28 or
@@ -63,21 +66,25 @@ Everything below is under `scratch/` (or the `--scratch` path), which `.gitignor
 | `scratch/engine/harness.py` | Taylor's paired harness for the post1 wheel (`$IMD_AMM_HARNESS`) |
 | `scratch/solcx/solc-v0.8.24` | the Solidity compiler py-solc-x finds through `$SOLCX_BINARY_PATH` |
 | `scratch/numba_cache/`, `scratch/tmp/`, `scratch/xc/` | `$NUMBA_CACHE_DIR`, `$TMPDIR`, `$XDG_CACHE_HOME` |
-| `scratch/.setup_fast/` | install stamp, `timings.log`, `smoke_replica.json`, `smoke_engine.json` |
+| `scratch/.setup_fast/` | install stamp, `progress` (finished steps), `timings.log`, `smoke_replica.json`, `smoke_engine.json` |
 | `<cache>/sha256/<sha256>/<filename>` | cached downloads; `<cache>/tmp/` holds in-flight transfers |
 
 `env.sh` exports `IMD_AMM_PLATFORM`, `IMD_AMM_MODE` (`engine` or `replica`),
 `IMD_AMM_SCRATCH`, `IMD_AMM_PYTHON`, `VIRTUAL_ENV`, `TMPDIR`, `XDG_CACHE_HOME`,
 `NUMBA_CACHE_DIR`, `PYTHONNOUSERSITE=1`, `PIP_NO_INDEX=1`, and in engine mode
-`IMD_AMM_ENGINE`, `IMD_AMM_HARNESS` and `SOLCX_BINARY_PATH`. The engine-only variables are
-absent after `--replica-only`, and `import amm_sim_rs` fails there by design.
+`IMD_AMM_ENGINE`, `IMD_AMM_HARNESS` and `SOLCX_BINARY_PATH`. A replica-only `env.sh` instead
+contains `unset IMD_AMM_ENGINE IMD_AMM_HARNESS SOLCX_BINARY_PATH`, so sourcing an engine
+`env.sh` and then a replica one leaves no engine setting behind (audit finding D2), and
+`import amm_sim_rs` fails there by design.
 
 The venv has no `pip`. To add a package, pin its wheel in `bootstrap/manifest.tsv`.
 
 ## What the script does
 
-1. **Refuses** early: missing or unknown `--platform`, macOS without `--replica-only`, or a
-   host that is not the requested platform (unless `--fetch-only`). A refused run creates nothing.
+1. **Refuses** early, from arguments alone: missing or unknown `--platform`, macOS without
+   `--replica-only`, a bad `--deadline`. A refused run creates nothing. A platform this machine
+   cannot run is caught later, when its extracted interpreter fails to execute (exit 3, before
+   any venv exists; the unusable extraction is removed). `--fetch-only` works on any machine.
 2. **Fetches** each pinned file of the chosen set. A cached file is re-hashed before every use.
    A download goes to `<cache>/tmp/<name>.<pid>.part` with `curl` limited to https, a 20 s
    connect timeout, 240 s per transfer and the pinned size as `--max-filesize`; size then
@@ -95,7 +102,56 @@ The venv has no `pip`. To add a package, pin its wheel in `bootstrap/manifest.ts
    compiler py-solc-x sees, and `amm_competition` importing from the pinned checkout.
    No simulation runs here, so engine preparation consumes no seed.
 5. **Prints** one summary line with `setup=cold` (something was downloaded) or `setup=cached`,
-   `install=fresh` or `reused`, and the seconds spent in fetch, install, verify and smoke.
+   `install=fresh`, `resumed` (finished steps of an interrupted run were kept) or `reused`,
+   the seconds spent in fetch, install, verify and smoke, and `deadline_s`.
+
+## Deadline, watchdog and resume
+
+The `--deadline` is one clock for the whole run, cached paths included. `bootstrap/deadline.sh`
+(sourced by the installer, also a command: `bash bootstrap/deadline.sh --seconds N -- CMD`)
+provides it:
+
+- Every child is an owned, bounded process: cache hashing, each `curl`, `tar`, the interpreter
+  probe, `venv`, `pip`, `verify_env.py` and both smokes run through `dl_run`, which starts the
+  command in its own process group (bash job control) and a watchdog that polls every 0.05 s.
+  When the budget runs out the watchdog writes an expiry flag and sends TERM, then after a grace
+  period KILL, to that process group only. There is no process discovery (`ps`, `pgrep`,
+  `/proc`) and no `setsid` or GNU `timeout`; bash 3.2 on macOS has everything needed. The
+  watchdog closes its stdio, so it can never hold a caller's pipe open.
+- `dl_check` runs before the clock-free steps too: start, every cache check, the fetch-only
+  summary, the install stamp and the final summary. A run that used its budget never prints
+  `setup_fast: OK` and never writes the stamp; it exits 75 with
+  `resume: rerun the same command.`
+- Progress is kept atomically (write to a temporary file, rename): `python/<hash>/.ok` after the
+  interpreter is extracted, `.setup_fast/progress` lines `<key> wheels` and `<key> engine` after
+  those steps, and `.setup_fast/installed.key` only after verification. The key hashes the
+  platform, mode, scratch path, `pins.sh` and every selected manifest row, so a changed pin
+  invalidates all of them. A rerun skips finished steps and reports `install=resumed`;
+  `--force` clears them. A step cut off mid-way (a half-installed venv, a partial engine
+  checkout) is redone from scratch because it was never marked.
+- Ctrl-C or SIGTERM to the installer kills the owned group, prints an interrupted notice and
+  exits 130; rerunning resumes the same way.
+
+Measured on the Linux x86_64 machine of this item (warm cache, `--offline`):
+
+| Run | total_s |
+|---|---|
+| engine, fresh scratch (16 cache hits, extraction, venv, 15 wheels, verify) | 6.8 to 8.1 |
+| engine, fresh scratch, `--smoke` (replica 256 runs + engine seed 9700000) | 8.6 to 12.1 |
+| engine, reused install (hash 16 files, verify imports) | 1.6 |
+| replica-only, fresh scratch (4 cache hits) | 7.0 to 7.4 |
+| cold fetch-only, Linux engine set, 135,768,787 bytes | 6.5 |
+| cold fetch-only, macOS replica set, 80,347,821 bytes | 2.7 |
+| cold engine setup, empty cache, one command (fetch 6.0, install 4.9, verify 2.3) | 13.1 |
+| cold replica-only setup, empty cache, one command (fetch 2.7, install 4.7, verify 2.0) | 9.5 |
+| warm `--offline --deadline 1`, `--offline --fetch-only --deadline 0` | exit 75 in 1.0 / 0.05 |
+
+The audit of commit `4a02cd145745a9d1c45d2ca8d669b650dce619f8` found (D1) that a warm
+`--offline --deadline 1` exited 0 after 1.573 s and a warm `--offline --fetch-only --deadline 0`
+exited 0 after 0.609 s, because the deadline was only checked before downloads and install
+steps, and that extraction, pip, verify and the smokes had no bound at all; and (D2) that
+sourcing an engine `env.sh` then a replica `env.sh` kept `IMD_AMM_ENGINE`, `IMD_AMM_HARNESS`
+and `SOLCX_BINARY_PATH`. Both are fixed as described above and covered by the tests below.
 
 ## Smokes
 
@@ -166,21 +222,50 @@ How each pin was derived and cross-checked on 2026-11-10:
 The four macOS files download, match their pins, and are what they claim: the interpreter is a
 64-bit arm64 Mach-O and the wheels are tagged `macosx_11_0_arm64` (numpy) and
 `macosx_12_0_arm64` (numba, llvmlite). **Nothing has been executed on macOS.** The first run
-there is `python3 tests/test_setup_fast.py -v`, whose `MacIntegration` test does a real
-replica-only setup.
+there is `IMD_TEST_PLATFORM=macos-arm64 python3 tests/test_setup_fast.py -v`, whose
+`MacIntegration` test does a real replica-only setup. The deadline helper uses only bash 3.2
+features (`set -m`, `kill -- -pgid`, `wait`, `sleep`), and falls back to whole-second sleeps
+and `date +%s` where fractional `sleep` or `EPOCHREALTIME` are missing, but that path is
+untested here.
 
 ## Tests
 
 ```sh
-python3 tests/test_setup_fast.py -v      # any Python 3.8+, standard library only
+python3 tests/test_setup_deadline.py -v                           # 13 tests, ~15 s, no network, no runtime
+python3 tests/test_setup_fast.py -v                               # 28 tests, 8 skipped: no runtime executed
+IMD_TEST_PLATFORM=linux-x86_64 python3 tests/test_setup_fast.py -v  # 28 tests, 1 skipped (Mac), ~45 s warm
 ```
 
-They cover hash mismatch, size bound, missing cache offline, cached offline rerun, a corrupt
-cache entry, a failed transfer, the deadline, platform and mode refusal, the manifest's
-pins, a real Linux engine setup with imports, an offline rerun, an offline forced reinstall
-with both smokes, replica-only, and the macOS files. Offline runs put a failing fake `curl`
-first on `PATH`. All state stays under `scratch/`, and every run passes `--cache scratch/cache`
-or a subdirectory of it.
+Any Python 3.8+, standard library only. Nothing in the tests inspects the machine: which
+runtime may really be executed in `scratch/` is the explicit input `IMD_TEST_PLATFORM`
+(`linux-x86_64` or `macos-arm64`); without it the integration groups skip.
+
+`test_setup_deadline.py` builds a fabricated interpreter archive whose `python3` is a shell
+script answering the installer's probes and stalling once on request, with a grandchild that
+records in a scratch marker whether it was killed. It covers: zero deadline on a warm cache
+(offline, fetch-only); a slow `sha256sum` making cached hashing exceed the budget (killed at
+the deadline, not waited for); a fetch cut off by the deadline that keeps the verified first
+file and resumes with one hit and one download; an install interrupted in the interpreter
+probe, in pip and in verification, each killing the stalled descendant, marking nothing
+unfinished, then resuming (`fresh`, `fresh`, `resumed`), then `reused`; unexpired success
+with `deadline_s` in the summary and the D2 check with fabricated engine values; SIGTERM to the
+installer (exit 130, group killed); and the `deadline.sh` command itself (expiry kills the
+group within the grace period and exits 75, exit status and stdout pass through, zero budget
+runs nothing, usage errors, no `ps`/`pgrep`/`setsid`/`timeout`/`uname` in the code).
+
+`test_setup_fast.py` covers the manifest's pins, no host inspection in code or tests, hash
+mismatch, size bound, missing cache offline, cached offline rerun, a corrupt cache entry, a
+failed transfer, the deadline hint, platform and mode refusal including macOS engine mode, a
+fabricated non-runnable interpreter archive (exit 3, nothing installed), and with
+`IMD_TEST_PLATFORM=linux-x86_64` a real engine setup with imports, an offline rerun, an
+offline forced reinstall with both smokes (engine seed 9700000 only), replica-only, sequential
+sourcing of the engine then replica `env.sh` (D2), a real install cut off by `--deadline 2`
+and resumed, and the macOS files. Offline runs put a failing fake `curl` first on `PATH`. All
+state stays under `scratch/`, and every run passes `--cache scratch/cache` or a subdirectory.
+
+Totals on this item's Linux machine: deadline suite 13 passed; setup suite 28 passed with 1
+skipped (`MacIntegration`) under `IMD_TEST_PLATFORM=linux-x86_64`, and 28 with 8 skipped
+without it. macOS execution remains untested.
 
 ## Changing a pin
 

@@ -7,22 +7,30 @@ Run from the repository root with any Python 3.8+ (standard library only):
 
     python3 tests/test_setup_fast.py -v
 
-Three groups:
-  * ManifestPins / Refusals / FetchLogic need no network. FetchLogic drives the real script
-    through its --manifest test hook with file:// payloads, so hash mismatch, missing cache,
-    cached offline rerun, corrupt cache, bounded size and the deadline are exercised in seconds.
-  * LinuxIntegration does the real thing on a Linux x86_64 host: cold or cached engine setup,
-    real imports, an offline rerun, an offline forced reinstall with the bounded smokes
-    (engine seed 9700000 only), and a replica-only install. It is skipped on other hosts, or
-    when the cache is empty and the network is unreachable.
+Nothing here inspects the machine (no uname, no platform module): which runtime may really be
+executed is an explicit test input, IMD_TEST_PLATFORM=linux-x86_64 or macos-arm64. Unset, only
+the groups that need no runtime run.
+
+Groups:
+  * ManifestPins / Refusals / FetchLogic need no network and no runtime. FetchLogic drives the
+    real script through its --manifest test hook with file:// payloads, so hash mismatch,
+    missing cache, cached offline rerun, corrupt cache, bounded size and the deadline are
+    exercised in seconds. Refusals includes a fabricated non-runnable interpreter archive,
+    which is how a --platform this machine cannot run shows up (exit 3).
+  * LinuxIntegration (IMD_TEST_PLATFORM=linux-x86_64) does the real thing: cold or cached engine
+    setup, real imports, an offline rerun, an offline forced reinstall with the bounded smokes
+    (engine seed 9700000 only), a replica-only install, sequential env sourcing, and a
+    deadline-interrupted install that is resumed. Skipped when the cache is empty and the
+    network is unreachable.
+  * MacIntegration (IMD_TEST_PLATFORM=macos-arm64) is the real replica-only setup on a Mac.
   * MacArtifacts downloads and hash-verifies the macOS arm64 files and inspects them
     (Mach-O arm64 interpreter, arm64 wheel tags). It does not execute them.
 
+tests/test_setup_deadline.py covers the deadline, watchdog and resume paths in depth.
 Every invocation passes --cache scratch/cache (or a subdirectory of it) and keeps all state
 under scratch/. Offline runs put a failing fake `curl` first on PATH to prove no transfer is tried.
 """
 import os
-import platform
 import re
 import shutil
 import struct
@@ -45,9 +53,8 @@ CREDIT_COMMIT = "4812a6382311624e1506aca131ca35c378f930d9"
 ENGINE_COMMIT = "6b6921f8d463314aa7c96234e1be25a25245f704"
 POST1_WHEEL_SHA = "aedb68280aca34c110968f00148387c95885207913fb2cf19a1ab4c5cfd6887a"
 SMOKE_SEED = 9700000
-HOST = (platform.system(), platform.machine())
-IS_LINUX_X86 = HOST == ("Linux", "x86_64")
-IS_MAC_ARM = HOST == ("Darwin", "arm64")
+# The only platform whose runtime these tests may really execute, stated by whoever runs them.
+TEST_PLATFORM = os.environ.get("IMD_TEST_PLATFORM", "")
 
 
 def fake_curl_dir():
@@ -165,7 +172,8 @@ class ManifestPins(unittest.TestCase):
             self.assertIn(dep, names)
 
     def test_every_delivered_file_credits_taylor(self):
-        files = [SETUP, ROOT / ".gitignore", Path(__file__), ROOT / "docs" / "setup.md"]
+        files = [SETUP, ROOT / ".gitignore", Path(__file__), ROOT / "docs" / "setup.md",
+                 ROOT / "tests" / "test_setup_deadline.py"]
         files += sorted((ROOT / "bootstrap").iterdir())
         for f in files:
             if f.is_dir():
@@ -181,6 +189,18 @@ class ManifestPins(unittest.TestCase):
         self.assertIn("--require-hashes", text)
         for banned in ("uv pip", "maturin", "cargo ", "rustup", "apt-get", "brew ", "install_solc", "/latest/"):
             self.assertNotIn(banned, text)
+
+    def test_no_host_inspection(self):
+        """--platform selects artifacts; neither the installer nor the tests look at the machine."""
+        for f in (SETUP, ROOT / "bootstrap" / "deadline.sh"):
+            code = "\n".join(l for l in f.read_text().splitlines() if not l.lstrip().startswith("#"))
+            self.assertNotIn("uname", code, f)
+            self.assertNotIn("/proc", code, f)
+        for f in (Path(__file__), ROOT / "tests" / "test_setup_deadline.py"):
+            text = f.read_text()
+            self.assertNotIn("import " + "platform", text, f)
+            self.assertNotIn("platform." + "machine", text, f)
+            self.assertNotIn("os." + "uname", text, f)
 
 
 class Refusals(unittest.TestCase):
@@ -204,17 +224,32 @@ class Refusals(unittest.TestCase):
             self.assertIn("replica work only", p.stderr)
             self.assertFalse(p.curl_called)
 
-    def test_foreign_platform_install_refused(self):
-        if IS_MAC_ARM:
-            plat, extra = "linux-x86_64", []
-        else:
-            plat, extra = "macos-arm64", ["--replica-only"]
+    def test_incompatible_runtime_is_refused_with_exit_3(self):
+        """A --platform this machine cannot run is detected by its interpreter failing to execute,
+        not by inspecting the machine: fabricated archive whose python3 is a foreign binary."""
         name = "foreign"
-        shutil.rmtree(str(TDIR / name), ignore_errors=True)
-        p = run_setup("--platform", plat, *extra, *self.args(name), no_network=True)
-        self.assertEqual(p.returncode, 3, p.stderr)
+        d = TDIR / name
+        shutil.rmtree(str(d), ignore_errors=True)
+        (d / "tree" / "python" / "bin").mkdir(parents=True)
+        binary = d / "tree" / "python" / "bin" / "python3"
+        binary.write_bytes(b"\xcf\xfa\xed\xfe" + b"\0" * 60)          # a Mach-O header, nothing this host runs
+        binary.chmod(0o755)
+        archive = d / "cpython-foreign.tar.gz"
+        with tarfile.open(str(archive), "w:gz") as tf:
+            tf.add(str(d / "tree" / "python"), arcname="python")
+        data = archive.read_bytes()
+        m = d / "manifest.tsv"
+        m.write_text("# Credit: Taylor (gtmcknight), amm-sim@%s\n%s\n" % (CREDIT_COMMIT, "\t".join(
+            ["linux-x86_64:replica", "python", sha256(data).hexdigest(), str(len(data)), archive.name, archive.as_uri()])))
+        p = run_setup("--platform", "linux-x86_64", "--replica-only", "--manifest", m, "--cache", CACHE / "_test" / name,
+                      "--scratch", d / "scratch")
+        self.assertEqual(p.returncode, 3, p.stdout + p.stderr)
+        self.assertIn("selected by --platform linux-x86_64 does not run on this machine", p.stderr)
         self.assertIn("Nothing was installed", p.stderr)
-        self.assertFalse((TDIR / name / "scratch").exists(), "a refused run must not create state")
+        self.assertNotIn("setup_fast: OK", p.stdout)
+        for left in ("venv", "env.sh", ".setup_fast/installed.key"):
+            self.assertFalse((d / "scratch" / left).exists(), left)
+        self.assertEqual(list((d / "scratch" / "python").glob("*")), [], "the unusable extraction is removed")
 
     def test_bad_flags_refused(self):
         p = run_setup("--platform", "linux-x86_64", "--with-rust", *self.args("badflag"), no_network=True)
@@ -356,7 +391,8 @@ def in_env(scratch, code):
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, timeout=300)
 
 
-@unittest.skipUnless(IS_LINUX_X86, "real setup needs a Linux x86_64 host (this is %s %s)" % HOST)
+@unittest.skipUnless(TEST_PLATFORM == "linux-x86_64",
+                     "real Linux setup runs only with IMD_TEST_PLATFORM=linux-x86_64 (explicit test input)")
 class LinuxIntegration(unittest.TestCase):
     scratch = TDIR / "it"
     first = None
@@ -436,7 +472,8 @@ class LinuxIntegration(unittest.TestCase):
         f = summary_fields(p.stdout)
         self.assertEqual((f["mode"], f["cache_hits"], f["install"]), ("replica", "4", "fresh"))
         env = (scratch / "env.sh").read_text()
-        self.assertNotIn("IMD_AMM_ENGINE", env)
+        self.assertNotIn("export IMD_AMM_ENGINE", env)
+        self.assertIn("unset IMD_AMM_ENGINE IMD_AMM_HARNESS SOLCX_BINARY_PATH", env)
         self.assertFalse((scratch / "engine").exists())
         r = in_env(scratch, "import numba, numpy; print(numba.njit(lambda x: x + 1)(41))")
         self.assertEqual((r.returncode, r.stdout.strip()), (0, "42"), r.stderr)
@@ -444,8 +481,36 @@ class LinuxIntegration(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("ModuleNotFoundError", r.stderr)
 
+    def test_6_replica_env_sourced_after_engine_env_clears_engine_settings(self):
+        """D2: engine env.sh then replica env.sh must leave no engine-only setting behind."""
+        code = ('. "$1/env.sh" && . "$2/env.sh" && printf "%s|%s|%s|%s" "${IMD_AMM_ENGINE:-}" '
+                '"${IMD_AMM_HARNESS:-}" "${SOLCX_BINARY_PATH:-}" "$IMD_AMM_MODE"')
+        r = subprocess.run(["bash", "-c", code, "bash", str(self.scratch), str(TDIR / "it_replica")], cwd=str(ROOT),
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, timeout=60)
+        self.assertEqual((r.returncode, r.stdout), (0, "|||replica"), r.stderr)
+        self.assertIn("unset IMD_AMM_ENGINE IMD_AMM_HARNESS SOLCX_BINARY_PATH", (TDIR / "it_replica" / "env.sh").read_text())
+        self.assertNotIn("unset IMD_AMM_ENGINE", (self.scratch / "env.sh").read_text())
 
-@unittest.skipUnless(IS_MAC_ARM, "macOS execution needs a Darwin arm64 host (this is %s %s)" % HOST)
+    def test_7_deadline_interrupts_real_install_then_resumes(self):
+        scratch = TDIR / "it_resume"
+        shutil.rmtree(str(scratch), ignore_errors=True)
+        p = run_setup("--platform", "linux-x86_64", "--cache", CACHE, "--scratch", scratch, "--offline",
+                      "--deadline", "2", no_network=True)
+        self.assertEqual(p.returncode, 75, p.stdout + p.stderr)
+        self.assertIn("resume: rerun the same command", p.stdout)
+        self.assertNotIn("setup_fast: OK", p.stdout)
+        self.assertFalse((scratch / ".setup_fast" / "installed.key").exists())
+        p = run_setup("--platform", "linux-x86_64", "--cache", CACHE, "--scratch", scratch, "--offline",
+                      no_network=True)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        f = summary_fields(p.stdout)
+        self.assertIn(f["install"], ("fresh", "resumed"))
+        self.assertEqual(f["cache_hits"], "16")
+        self.assertEqual((scratch / ".setup_fast" / "timings.log").read_text().count(" OK "), 1)
+
+
+@unittest.skipUnless(TEST_PLATFORM == "macos-arm64",
+                     "real macOS setup runs only with IMD_TEST_PLATFORM=macos-arm64 (explicit test input)")
 class MacIntegration(unittest.TestCase):
     """Real replica-only setup on macOS arm64. Written on Linux and never run there: until someone
     runs it on a Mac, macOS execution is unproven."""
